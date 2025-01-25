@@ -26,7 +26,7 @@
     "@auth/core": "0.37.2",
     "@auth/drizzle-adapter": "1.4.2",
     "@better-auth/expo": "^1.1.15-beta.7",
-    "@t3-oss/env-nextjs": "^0.11.1",
+    "@t3-oss/env-nextjs": "^0.12.0",
     "better-auth": "^1.1.15-beta.7",
     "next": "^14.2.23",
     "react": "catalog:react18",
