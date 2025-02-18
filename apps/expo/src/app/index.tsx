@@ -1,11 +1,12 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, Stack } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { RouterOutputs } from "~/utils/api";
-import { api } from "~/utils/api";
+import { trpc } from "~/utils/api";
 import { authClient, signIn, signOut } from "~/utils/auth";
 
 function PostCard(props: {
@@ -38,18 +39,20 @@ function PostCard(props: {
 }
 
 function CreatePost() {
-  const utils = api.useUtils();
+  const queryClient = useQueryClient();
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  const { mutate, error } = api.post.create.useMutation({
-    async onSuccess() {
-      setTitle("");
-      setContent("");
-      await utils.post.all.invalidate();
-    },
-  });
+  const { mutate, error } = useMutation(
+    trpc.post.create.mutationOptions({
+      async onSuccess() {
+        setTitle("");
+        setContent("");
+        await queryClient.invalidateQueries(trpc.post.all.queryFilter());
+      },
+    }),
+  );
 
   return (
     <View className="mt-4 flex gap-2">
@@ -103,10 +106,14 @@ function MobileAuth() {
         {session?.user.name ?? "Not logged in"}
       </Text>
       <Button
-        onPress={() => (session ? signOut() : signIn.social({
-          provider: "discord",
-          callbackURL: "/",
-        }))}
+        onPress={() =>
+          session
+            ? signOut()
+            : signIn.social({
+                provider: "discord",
+                callbackURL: "/",
+              })
+        }
         title={session ? "Sign Out" : "Sign In With Discord"}
         color={"#5B65E9"}
       />
@@ -115,11 +122,16 @@ function MobileAuth() {
 }
 
 export default function Index() {
-  const utils = api.useUtils();
+  const queryClient = useQueryClient();
 
-  const deletePostMutation = api.post.delete.useMutation({
-    onSettled: () => utils.post.all.invalidate(),
-  });
+  const postQuery = useQuery(trpc.post.all.queryOptions());
+
+  const deletePostMutation = useMutation(
+    trpc.post.delete.mutationOptions({
+      onSettled: () =>
+        queryClient.invalidateQueries(trpc.post.all.queryFilter()),
+    }),
+  );
 
   return (
     <SafeAreaView className="bg-background">
